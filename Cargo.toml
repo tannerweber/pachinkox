@@ -1,0 +1,33 @@
+[workspace]
+resolver = "3"
+members = [
+  "pachinkox",
+  "pachinkox-bin"
+]
+
+[workspace.package]
+description = ""
+edition = "2024"
+authors = ["Tanner Weber <tannerw@pdx.edu>"]
+readme = "README.md"
+repository = "https://github.com/tannerweber/pachinkox"
+license = "GPL-3.0-or-later"
+keywords = ["simulation", "pachinko", "physics", "game"]
+
+[workspace.lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+# DENY PANICS
+unwrap_used = "deny"
+expect_used = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "deny"
+unreachable = "deny"
+unimplemented = "deny"
+unchecked_time_subtraction = "deny"
+todo = "deny"
+string_slice = "deny"
+panic_in_result_fn = "deny"
+panic = "deny"
+exit = "deny"
+as_conversions = "deny"
