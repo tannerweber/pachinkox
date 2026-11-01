@@ -9,5 +9,9 @@ repository.workspace = true
 license.workspace = true
 keywords.workspace = true
 
+[dependencies]
+raylib.workspace = true
+pachinkox = { path = "../pachinkox" }
+
 [lints]
 workspace = true

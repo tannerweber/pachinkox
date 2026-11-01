@@ -11,3 +11,6 @@ keywords.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+rand.workspace = true
