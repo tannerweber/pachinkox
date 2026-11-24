@@ -6,7 +6,7 @@ const WIDTH: f64 = 600.0;
 const HEIGHT: f64 = 600.0;
 const LEFT_WALL: f64 = -WIDTH / 2.0;
 const RIGHT_WALL: f64 = WIDTH / 2.0;
-const GRAVITY: f64 = 1.0;
+const GRAVITY: f64 = 0.25;
 const DEFAULT_BALL_RADIUS: f64 = 10.0;
 pub const PIN_RADIUS: f64 = 5.0;
 
@@ -109,7 +109,7 @@ impl World {
 
         for _ in 0..n {
             let x = rand::random_range(LEFT_WALL..RIGHT_WALL);
-            let y = rand::random_range(-HEIGHT..0.0);
+            let y = rand::random_range(-HEIGHT..-50.0);
             pins.push(Pin {
                 origin: Point { x, y },
             });
@@ -285,7 +285,7 @@ pub enum Entity {
 }
 
 /// A 2D ball that bounces around.
-#[derive(Debug, Clone, PartialEq, PartialOrd, Default)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Ball {
     pub origin: Point,
     pub radius: f64,
@@ -309,6 +309,16 @@ impl Ball {
         self.velocity.y -= GRAVITY;
         self.origin.x += self.velocity.x;
         self.origin.y += self.velocity.y;
+    }
+}
+
+impl std::default::Default for Ball {
+    fn default() -> Self {
+        Self {
+            origin: Point::default(),
+            radius: DEFAULT_BALL_RADIUS,
+            velocity: Velocity::default(),
+        }
     }
 }
 
