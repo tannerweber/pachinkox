@@ -1,5 +1,3 @@
-use std::vec;
-
 const RANGE: f64 = 1.0;
 const RESTITUTION: f64 = 0.7;
 const WIDTH: f64 = 600.0;
@@ -8,6 +6,7 @@ const LEFT_WALL: f64 = -WIDTH / 2.0;
 const RIGHT_WALL: f64 = WIDTH / 2.0;
 const GRAVITY: f64 = 0.25;
 const DEFAULT_BALL_RADIUS: f64 = 10.0;
+const DEFAULT_PIN_COUNT: usize = 200;
 pub const PIN_RADIUS: f64 = 5.0;
 
 /// The world containing all entities to be simulated.
@@ -19,28 +18,19 @@ pub const PIN_RADIUS: f64 = 5.0;
 /// |        (0,-2)      |
 /// +--------------------+
 pub struct World {
-    pub entities: vec::Vec<Entity>,
+    pub entities: Vec<Entity>,
 }
 
 impl World {
     #[must_use]
-    pub fn new(ball: &Ball) -> Self {
+    pub fn new(ball: Ball) -> Self {
         let mut entities = vec![
-            Entity::Ball(ball.clone()),
-            // Entity::Ball(Ball::new(90.0, 0.0, 10.0)),
-            // Entity::Ball(Ball::new(80.0, 0.0, 10.0)),
-            // Entity::Ball(Ball::new(50.0, 0.0, 10.0)),
-            // Entity::Ball(Ball::new(30.0, 0.0, 10.0)),
-            // Entity::Ball(Ball::new(10.0, 0.0, 10.0)),
-            // Entity::Ball(Ball::new(-30.0, 0.0, 10.0)),
-            // Entity::Ball(Ball::new(-50.0, 0.0, 10.0)),
-            // Entity::Ball(Ball::new(-70.0, 0.0, 10.0)),
-            // Entity::Ball(Ball::new(-90.0, 0.0, 10.0)),
+            Entity::Ball(ball),
             Entity::LeftWall(Wall { x: LEFT_WALL }),
             Entity::RightWall(Wall { x: RIGHT_WALL }),
             Entity::Floor(Floor { y: -HEIGHT }),
         ];
-        for p in &Self::get_random_pins(200) {
+        for p in &Self::get_random_pins(DEFAULT_PIN_COUNT) {
             entities.push(Entity::Pin(p.clone()));
         }
         Self { entities }
@@ -55,7 +45,7 @@ impl World {
     /// use std::time::Duration;
     /// use pachinkox::*;
     ///
-    /// let mut world = World::new(&Ball::default());
+    /// let mut world = World::new(Ball::default());
     /// loop {
     ///     world.next();
     ///     sleep(Duration::from_millis(16));
@@ -83,8 +73,8 @@ impl World {
     }
 
     #[must_use]
-    pub fn get_pin_diamond() -> vec::Vec<Pin> {
-        let mut pins = vec::Vec::new();
+    pub fn get_pin_grid() -> Vec<Pin> {
+        let mut pins = Vec::new();
         let levels: u32 = 11;
         let max_width: f64 = WIDTH;
         let y_gap: f64 = -50.0;
@@ -104,8 +94,8 @@ impl World {
     }
 
     #[must_use]
-    pub fn get_random_pins(n: u32) -> vec::Vec<Pin> {
-        let mut pins = vec::Vec::new();
+    pub fn get_random_pins(n: usize) -> Vec<Pin> {
+        let mut pins = Vec::new();
 
         for _ in 0..n {
             let x = rand::random_range(LEFT_WALL..RIGHT_WALL);
@@ -118,8 +108,8 @@ impl World {
         pins
     }
 
-    fn get_colliding_entities(&self) -> vec::Vec<(usize, usize)> {
-        let mut v = vec::Vec::new();
+    fn get_colliding_entities(&self) -> Vec<(usize, usize)> {
+        let mut v = Vec::new();
 
         for (i, entity) in self.entities.iter().enumerate() {
             for j in i + 1..self.entities.len() {
@@ -141,7 +131,7 @@ impl World {
                 E::LeftWall(_) => Self::blw_phy(ball),
                 E::RightWall(_) => Self::brw_phy(ball),
                 E::Floor(_) => Self::bf_phy(ball),
-                E::Pin(pin) => Self::bp_phy(ball, pin),
+                E::Pin(_) => Self::bp_phy(ball),
             },
             E::LeftWall(_) => match b {
                 E::Ball(ball) => Self::blw_phy(ball),
@@ -155,8 +145,8 @@ impl World {
                 E::Ball(ball) => Self::bf_phy(ball),
                 _ => (),
             },
-            E::Pin(pin) => match b {
-                E::Ball(ball) => Self::bp_phy(ball, pin),
+            E::Pin(_) => match b {
+                E::Ball(ball) => Self::bp_phy(ball),
                 _ => (),
             },
         }
@@ -255,21 +245,7 @@ impl World {
     }
 
     // Ball - Pin
-    fn bp_phy(b: &mut Ball, p: &Pin) {
-        let distance = b.origin.distance(&p.origin);
-        let t = b.radius / distance;
-        let collision_point_x = b.origin.x + t * (p.origin.x - b.origin.x);
-        let collision_point_y = b.origin.y + t * (p.origin.y - b.origin.y);
-        let col_point = Point {
-            x: collision_point_x,
-            y: collision_point_y,
-        };
-        let tangent_line: Point = col_point
-            + (t * Point {
-                x: -(p.origin.y - b.origin.y),
-                y: p.origin.x - b.origin.x,
-            });
-
+    fn bp_phy(b: &mut Ball) {
         b.velocity.x = -b.velocity.x * RESTITUTION;
         b.velocity.y = -b.velocity.y * RESTITUTION;
     }
@@ -411,8 +387,7 @@ mod test {
 
     #[test]
     fn test_constructor() {
-        let ball = Ball::default();
-        let _ = World::new(&ball);
+        let _ = World::new(Ball::default());
     }
 
     #[test]

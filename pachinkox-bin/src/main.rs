@@ -1,6 +1,6 @@
 use std::{thread::sleep, time::Duration};
 
-use pachinkox::{Entity, Point, Velocity};
+use pachinkox::{Ball, Entity, Point, Velocity};
 use raylib::prelude::*;
 
 const WALL_HEIGHT: i32 = 999;
@@ -23,8 +23,7 @@ fn main() {
     let (mut rl, thread) =
         raylib::init().size(1024, 768).title("Pachinkox").build();
 
-    let ball = pachinkox::Ball::default();
-    let mut world = pachinkox::World::new(&ball);
+    let mut world = pachinkox::World::new(Ball::default());
     let mut restart = false;
     let mut quit = false;
     let mut ball_dropped = false;
@@ -49,7 +48,7 @@ fn main() {
         let screen_width = d.get_screen_width();
 
         if restart {
-            world = pachinkox::World::new(&ball);
+            world = pachinkox::World::new(Ball::default());
             ball_path = Vec::new();
             restart = false;
             ball_dropped = false;
@@ -101,7 +100,6 @@ fn main() {
                                 con_x(ball.origin.x, screen_width),
                                 con_y(ball.origin.y),
                             ));
-                            eprintln!("{}", ball_path.len());
                         }
                     }
                 }
