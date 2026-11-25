@@ -6,34 +6,46 @@ const LEFT_WALL: f64 = -WIDTH / 2.0;
 const RIGHT_WALL: f64 = WIDTH / 2.0;
 const GRAVITY: f64 = 0.25;
 const DEFAULT_BALL_RADIUS: f64 = 10.0;
-const DEFAULT_PIN_COUNT: usize = 200;
+const DEFAULT_PIN_COUNT: usize = 100;
 pub const PIN_RADIUS: f64 = 5.0;
 
 /// The world containing all entities to be simulated.
 ///
 /// Coordinates
+///
+/// ```md
 /// +--------------------+
 /// | (-1,0) (0,0) (1,0) |
 /// |        (0,-1)      |
 /// |        (0,-2)      |
 /// +--------------------+
+/// ```
+#[derive(Debug, Default)]
 pub struct World {
     pub entities: Vec<Entity>,
 }
 
 impl World {
+    /// Returns a world with no entities. Use the `builder()` method to
+    /// construct a `World` with a variety of default entities.
     #[must_use]
-    pub fn new(ball: Ball) -> Self {
-        let mut entities = vec![
-            Entity::Ball(ball),
-            Entity::LeftWall(Wall { x: LEFT_WALL }),
-            Entity::RightWall(Wall { x: RIGHT_WALL }),
-            Entity::Floor(Floor { y: -HEIGHT }),
-        ];
-        for p in &Self::get_random_pins(DEFAULT_PIN_COUNT) {
-            entities.push(Entity::Pin(p.clone()));
-        }
-        Self { entities }
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Builder for the `World` that provides default entities and the ability
+    /// to change them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use pachinkox::*;
+    ///
+    /// let world = World::builder().pins(150).build();
+    /// ```
+    #[must_use]
+    pub fn builder() -> WorldBuilder {
+        WorldBuilder::default()
     }
 
     /// Progress the world by 1 tick.
@@ -45,11 +57,11 @@ impl World {
     /// use std::time::Duration;
     /// use pachinkox::*;
     ///
-    /// let mut world = World::new(Ball::default());
+    /// let mut world = World::builder().pins(150).build();
     /// loop {
     ///     world.next();
     ///     sleep(Duration::from_millis(16));
-    ///     break;
+    ///     break; // Only for example
     /// }
     /// ```
     pub fn next(&mut self) {
@@ -63,6 +75,7 @@ impl World {
             }
         }
         for entity in &mut self.entities {
+            #[allow(clippy::single_match)]
             match entity {
                 Entity::Ball(ball) => {
                     ball.next();
@@ -93,21 +106,6 @@ impl World {
         pins
     }
 
-    #[must_use]
-    pub fn get_random_pins(n: usize) -> Vec<Pin> {
-        let mut pins = Vec::new();
-
-        for _ in 0..n {
-            let x = rand::random_range(LEFT_WALL..RIGHT_WALL);
-            let y = rand::random_range(-HEIGHT..-50.0);
-            pins.push(Pin {
-                origin: Point { x, y },
-            });
-        }
-
-        pins
-    }
-
     fn get_colliding_entities(&self) -> Vec<(usize, usize)> {
         let mut v = Vec::new();
 
@@ -125,6 +123,7 @@ impl World {
 
     fn apply_collision(a: &mut Entity, b: &mut Entity) {
         use Entity as E;
+        #[allow(clippy::single_match)]
         match a {
             E::Ball(ball) => match b {
                 E::Ball(_) => (),
@@ -248,6 +247,84 @@ impl World {
     fn bp_phy(b: &mut Ball) {
         b.velocity.x = -b.velocity.x * RESTITUTION;
         b.velocity.y = -b.velocity.y * RESTITUTION;
+    }
+}
+
+#[derive(Debug)]
+pub struct WorldBuilder {
+    pin_count: usize,
+    ball: Ball,
+    left_wall: Wall,
+    right_wall: Wall,
+    floor: Floor,
+}
+
+impl WorldBuilder {
+    #[must_use]
+    pub fn build(self) -> World {
+        let mut entities = vec![
+            Entity::Ball(self.ball),
+            Entity::LeftWall(self.right_wall),
+            Entity::RightWall(self.left_wall),
+            Entity::Floor(self.floor),
+        ];
+
+        for p in &Self::get_random_pins(self.pin_count) {
+            entities.push(Entity::Pin(p.clone()));
+        }
+
+        World { entities }
+    }
+
+    #[must_use]
+    pub const fn pins(mut self, count: usize) -> Self {
+        self.pin_count = count;
+        self
+    }
+
+    #[must_use]
+    pub const fn floor(mut self, y: f64) -> Self {
+        self.floor = Floor { y };
+        self
+    }
+
+    #[must_use]
+    pub const fn left_wall(mut self, x: f64) -> Self {
+        self.left_wall = Wall { x };
+        self
+    }
+
+    #[must_use]
+    pub const fn right_wall(mut self, x: f64) -> Self {
+        self.right_wall = Wall { x };
+        self
+    }
+
+    #[must_use]
+    fn get_random_pins(n: usize) -> Vec<Pin> {
+        let mut pins = Vec::new();
+
+        for _ in 0..n {
+            let x = rand::random_range(LEFT_WALL..RIGHT_WALL);
+            let y = rand::random_range(-HEIGHT..-50.0);
+            pins.push(Pin {
+                origin: Point { x, y },
+            });
+        }
+
+        pins
+    }
+}
+
+impl std::default::Default for WorldBuilder {
+    fn default() -> Self {
+        Self {
+            pin_count: DEFAULT_PIN_COUNT,
+            ball: Ball::default(),
+            left_wall: Wall { x: LEFT_WALL },
+            right_wall: Wall { x: RIGHT_WALL },
+            floor: Floor { y: -HEIGHT },
+        }
     }
 }
 
@@ -387,7 +464,7 @@ mod test {
 
     #[test]
     fn test_constructor() {
-        let _ = World::new(Ball::default());
+        let _ = World::new();
     }
 
     #[test]
