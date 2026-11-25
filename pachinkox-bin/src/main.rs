@@ -9,7 +9,6 @@ const END: f64 = -600.0;
 const KEY_QUIT: char = 'q';
 const KEY_RESTART: char = 'r';
 const KEY_DROP_BALL: char = ' ';
-const KEY_SWITCH_LAYOUT: char = 's';
 const FONT_SIZE: i32 = 30;
 const BALL_START_MIN: f64 = -100.0;
 const BALL_START_MAX: f64 = 100.0;
@@ -23,11 +22,11 @@ fn main() {
     let (mut rl, thread) =
         raylib::init().size(1024, 768).title("Pachinkox").build();
 
-    let mut world = World::builder().pins(200).build();
+    let world_builder = World::builder().pin_density(10.0);
+    let mut world = world_builder.clone().build();
     let mut restart = false;
     let mut quit = false;
     let mut ball_dropped = false;
-    let mut random_layout = false;
     let mut ball_starting_position: f64 = 0.0;
     let mut ball_direction = Direction::Right;
     let mut ball_path = Vec::<(i32, i32)>::new();
@@ -38,7 +37,6 @@ fn main() {
             Some(c) => match c {
                 KEY_RESTART => restart = true,
                 KEY_QUIT => quit = true,
-                KEY_SWITCH_LAYOUT => random_layout = !random_layout,
                 KEY_DROP_BALL => ball_dropped = true,
                 _ => (),
             },
@@ -48,7 +46,7 @@ fn main() {
         let screen_width = d.get_screen_width();
 
         if restart {
-            world = pachinkox::World::builder().pins(200).build();
+            world = world_builder.clone().build();
             ball_path = Vec::new();
             restart = false;
             ball_dropped = false;
@@ -150,7 +148,6 @@ fn main() {
         d.draw_text("<space> to drop ball", 10, 10, FONT_SIZE, Color::BLACK);
         d.draw_text("q to quit", 10, 40, FONT_SIZE, Color::BLACK);
         d.draw_text("r to restart", 10, 70, FONT_SIZE, Color::BLACK);
-        d.draw_text("s to switch layout", 10, 100, FONT_SIZE, Color::BLACK);
 
         d.clear_background(Color {
             r: 235,

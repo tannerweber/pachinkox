@@ -4,9 +4,10 @@ const WIDTH: f64 = 600.0;
 const HEIGHT: f64 = 600.0;
 const LEFT_WALL: f64 = -WIDTH / 2.0;
 const RIGHT_WALL: f64 = WIDTH / 2.0;
-const GRAVITY: f64 = 0.25;
+const GRAVITY_PER_TICK: f64 = -0.25;
 const DEFAULT_BALL_RADIUS: f64 = 10.0;
-const DEFAULT_PIN_COUNT: usize = 100;
+const DEFAULT_PIN_DENSITY: f64 = 10.0;
+const MARGIN_FROM_TOP: f64 = 50.0;
 pub const PIN_RADIUS: f64 = 5.0;
 
 /// The world containing all entities to be simulated.
@@ -41,7 +42,7 @@ impl World {
     /// ```
     /// use pachinkox::*;
     ///
-    /// let world = World::builder().pins(150).build();
+    /// let world = World::builder().pin_density(10.0).build();
     /// ```
     #[must_use]
     pub fn builder() -> WorldBuilder {
@@ -57,7 +58,7 @@ impl World {
     /// use std::time::Duration;
     /// use pachinkox::*;
     ///
-    /// let mut world = World::builder().pins(150).build();
+    /// let mut world = World::builder().pin_density(10.0).build();
     /// loop {
     ///     world.next();
     ///     sleep(Duration::from_millis(16));
@@ -83,27 +84,6 @@ impl World {
                 _ => (),
             }
         }
-    }
-
-    #[must_use]
-    pub fn get_pin_grid() -> Vec<Pin> {
-        let mut pins = Vec::new();
-        let levels: u32 = 11;
-        let max_width: f64 = WIDTH;
-        let y_gap: f64 = -50.0;
-
-        for i in 1..=levels {
-            for j in 1..=i {
-                let distance: f64 = max_width / (f64::from(i) + 1.0);
-                let y: f64 = f64::from(i) * y_gap;
-                let x: f64 = (f64::from(j) * distance) - max_width / 2.0;
-                pins.push(Pin {
-                    origin: Point { x, y },
-                });
-            }
-        }
-
-        pins
     }
 
     fn get_colliding_entities(&self) -> Vec<(usize, usize)> {
@@ -250,9 +230,9 @@ impl World {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WorldBuilder {
-    pin_count: usize,
+    pin_density: f64,
     ball: Ball,
     left_wall: Wall,
     right_wall: Wall,
@@ -262,23 +242,28 @@ pub struct WorldBuilder {
 impl WorldBuilder {
     #[must_use]
     pub fn build(self) -> World {
-        let mut entities = vec![
-            Entity::Ball(self.ball),
-            Entity::LeftWall(self.right_wall),
-            Entity::RightWall(self.left_wall),
-            Entity::Floor(self.floor),
-        ];
+        let mut entities = Vec::<Entity>::new();
 
-        for p in &Self::get_random_pins(self.pin_count) {
+        for p in &Self::get_random_pins(
+            &self.floor,
+            &self.left_wall,
+            &self.right_wall,
+            self.pin_density,
+        ) {
             entities.push(Entity::Pin(p.clone()));
         }
+
+        entities.push(Entity::Ball(self.ball));
+        entities.push(Entity::LeftWall(self.left_wall));
+        entities.push(Entity::RightWall(self.right_wall));
+        entities.push(Entity::Floor(self.floor));
 
         World { entities }
     }
 
     #[must_use]
-    pub const fn pins(mut self, count: usize) -> Self {
-        self.pin_count = count;
+    pub const fn pin_density(mut self, density: f64) -> Self {
+        self.pin_density = density;
         self
     }
 
@@ -301,15 +286,47 @@ impl WorldBuilder {
     }
 
     #[must_use]
-    fn get_random_pins(n: usize) -> Vec<Pin> {
-        let mut pins = Vec::new();
+    fn get_random_pins(
+        floor: &Floor,
+        left_wall: &Wall,
+        right_wall: &Wall,
+        mut density: f64,
+    ) -> Vec<Pin> {
+        if density < 1.0 {
+            density = 1.0;
+        }
+        let mut pins = Vec::<Pin>::new();
+        let mut rows = Vec::<((f64, f64), Vec<(f64, f64)>)>::new();
+        let width = (left_wall.x - right_wall.x).abs();
+        let height = floor.y.abs();
+        let cell_width = width / density;
+        let cell_height = height / density;
 
-        for _ in 0..n {
-            let x = rand::random_range(LEFT_WALL..RIGHT_WALL);
-            let y = rand::random_range(-HEIGHT..-50.0);
-            pins.push(Pin {
-                origin: Point { x, y },
-            });
+        for n in 0..((height / cell_height).round() as usize) {
+            let min_y = -(n as f64) * cell_height;
+            let max_y = (-(n as f64) + 1.0) * cell_height;
+            rows.push(((min_y, max_y), vec![]));
+        }
+
+        for r in &mut rows {
+            for n in 0..((width / cell_width).round() as usize) {
+                let min_x = (n as f64 * cell_width) - width / 2.0;
+                let max_x = ((n as f64 + 1.0) * cell_width) - width / 2.0;
+                r.1.push((min_x, max_x));
+            }
+        }
+
+        for r in &rows {
+            for c in &r.1 {
+                let x = rand::random_range(c.0..c.1);
+                let y = rand::random_range(r.0.0..r.0.1);
+                if y > -MARGIN_FROM_TOP {
+                    continue;
+                }
+                pins.push(Pin {
+                    origin: Point { x, y },
+                });
+            }
         }
 
         pins
@@ -319,7 +336,7 @@ impl WorldBuilder {
 impl std::default::Default for WorldBuilder {
     fn default() -> Self {
         Self {
-            pin_count: DEFAULT_PIN_COUNT,
+            pin_density: DEFAULT_PIN_DENSITY,
             ball: Ball::default(),
             left_wall: Wall { x: LEFT_WALL },
             right_wall: Wall { x: RIGHT_WALL },
@@ -359,7 +376,7 @@ impl Ball {
     }
 
     pub fn next(&mut self) {
-        self.velocity.y -= GRAVITY;
+        self.velocity.y += GRAVITY_PER_TICK;
         self.origin.x += self.velocity.x;
         self.origin.y += self.velocity.y;
     }
