@@ -33,15 +33,15 @@ fn main() {
     let mut tick: u128 = 0;
 
     while !rl.window_should_close() {
-        match rl.get_char_pressed() {
-            Some(c) => match c {
+        if let Some(c) = rl.get_char_pressed() {
+            match c {
                 KEY_RESTART => restart = true,
                 KEY_QUIT => quit = true,
                 KEY_DROP_BALL => ball_dropped = true,
                 _ => (),
-            },
-            None => (),
+            }
         }
+
         let mut d = rl.begin_drawing(&thread);
         let screen_width = d.get_screen_width();
 
@@ -87,18 +87,16 @@ fn main() {
                         restart = true;
                     }
                     d.draw_circle(
-                        con_x(ball.origin.x, screen_width) as i32,
-                        con_y(ball.origin.y) as i32,
+                        con_x(ball.origin.x, screen_width),
+                        con_y(ball.origin.y),
                         ball.radius as f32,
                         CIRCLE_COLOR,
                     );
-                    if ball_dropped {
-                        if tick.is_multiple_of(3) {
-                            ball_path.push((
-                                con_x(ball.origin.x, screen_width),
-                                con_y(ball.origin.y),
-                            ));
-                        }
+                    if ball_dropped && tick.is_multiple_of(3) {
+                        ball_path.push((
+                            con_x(ball.origin.x, screen_width),
+                            con_y(ball.origin.y),
+                        ));
                     }
                 }
                 Entity::LeftWall(wall) => {
@@ -130,8 +128,8 @@ fn main() {
                 }
                 Entity::Pin(pin) => {
                     d.draw_circle(
-                        con_x(pin.origin.x, screen_width) as i32,
-                        con_y(pin.origin.y) as i32,
+                        con_x(pin.origin.x, screen_width),
+                        con_y(pin.origin.y),
                         pachinkox::PIN_RADIUS as f32,
                         PIN_COLOR,
                     );
