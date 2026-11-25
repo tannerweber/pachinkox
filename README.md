@@ -4,6 +4,10 @@ Tanner Weber 2026
 
 Basic simulation of a pachinko machine in rust.
 
+![Screenshot of the GUI app running simulation](./screenshot.png)
+
+_Screenshot of the GUI app running the simulation._
+
 ## Build and Run
 
 [Raylib](https://github.com/raylib-rs/raylib-rs) dependencies need to be on
