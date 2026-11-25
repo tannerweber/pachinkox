@@ -1,3 +1,34 @@
+//! This library crate can perform a basic simulation like a pachink machine.
+//! A ball can bounce of pins as it falls down.
+//!
+//! # Quick Start
+//!
+//! ```
+//! use std::thread::sleep;
+//! use std::time::Duration;
+//! use pachinkox::*;
+//!
+//! let mut world = World::builder().pin_density(10.0).build();
+//! loop {
+//!
+//!     for entity in &mut world.entities {
+//!         match entity {
+//!             Entity::Ball(ball) => {
+//!                 // Draw the ball
+//!             }
+//!             Entity::Pin(pin) => {
+//!                 // Draw the pin
+//!             }
+//!             _ => (),
+//!         }
+//!     }
+//!
+//!     world.next();
+//!     sleep(Duration::from_millis(16));
+//!     break; // Only for example
+//! }
+//! ```
+
 const RANGE: f64 = 1.0;
 const RESTITUTION: f64 = 0.7;
 const WIDTH: f64 = 600.0;
@@ -230,6 +261,7 @@ impl World {
     }
 }
 
+/// Construct a `World` with some default entities.
 #[derive(Debug, Clone)]
 pub struct WorldBuilder {
     pin_density: f64,
@@ -261,12 +293,14 @@ impl WorldBuilder {
         World { entities }
     }
 
+    /// Set the density of pins. A higher value leads to more pins.
     #[must_use]
     pub const fn pin_density(mut self, density: f64) -> Self {
         self.pin_density = density;
         self
     }
 
+    /// Set the floor position.
     #[must_use]
     pub const fn floor(mut self, y: f64) -> Self {
         self.floor = Floor { y };
@@ -274,12 +308,14 @@ impl WorldBuilder {
     }
 
     #[must_use]
+    /// Set the left wall position.
     pub const fn left_wall(mut self, x: f64) -> Self {
         self.left_wall = Wall { x };
         self
     }
 
     #[must_use]
+    /// Set the right wall position.
     pub const fn right_wall(mut self, x: f64) -> Self {
         self.right_wall = Wall { x };
         self
@@ -345,6 +381,7 @@ impl std::default::Default for WorldBuilder {
     }
 }
 
+/// An entity that the `World` can contain.
 #[derive(Debug)]
 pub enum Entity {
     Ball(Ball),
@@ -398,17 +435,19 @@ pub struct Wall {
     pub x: f64,
 }
 
+/// The floor of the simlulation.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Default)]
 pub struct Floor {
     pub y: f64,
 }
 
-/// An infinitely small pin.
+/// A fixed position circular pin.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Default)]
 pub struct Pin {
     pub origin: Point,
 }
 
+/// A point in 2D coordinates space.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Default)]
 pub struct Point {
     /// Horizontal
@@ -467,6 +506,7 @@ impl std::ops::Add<Self> for Point {
     }
 }
 
+/// A Velocity in 2D coordinates.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Default)]
 pub struct Velocity {
     /// Horizontal
